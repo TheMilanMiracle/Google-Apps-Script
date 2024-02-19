@@ -18,7 +18,7 @@ const retry_sleep_time = 5; // default is 5
 const html_import_mode = false; //default is false
 
 
-/** Fetch the data from a CSV file and import it to a Google Spreadsheet
+/** Function that fetches the data from a CSV file and import it to a Google Spreadsheet
  * 
  * 
  * this function fetches a whole csv file hosted in One Drive link by chunks, parse the data in it
@@ -33,105 +33,112 @@ function importCSVData() {
   // counter for the retries of the fetch process
   var retries_left = fetching_retries;
 
-  try{ // tries to fetch the data
+  while(true){
 
-    // parameters of the file metadata request
-    var params = {
-      'method' : 'GET',
-      'contentType' : 'application/json',
-      'headers' : {
-        'Authorization' : 'Bearer ' + getToken(client_id, client_secret, tenant_id),
-      }
-    };
+    try{ // tries to fetch the data
 
-    // route of the file extracted from the spreadsheet
-    const file_route = configSheet.getRange('B1').getValue();
-
-    // file url constructed with the user id and the route extracted from the spreadsheet
-    const file_url = `https://graph.microsoft.com/v1.0/users/${user_id}/drive/items/root:${file_route}:/content`;
-
-    // the url to fetch the metadata of the file
-    const metadata_url = file_url.replace(':/content','');
-
-    // metadata fetch response
-    response = UrlFetchApp.fetch(metadata_url, params);
-
-    // size of the file (in bytes)
-    const file_size = JSON.parse(response.getContentText()).size;
-
-    // the amount of chunks that will be downloaded to get the data in the file
-    const file_chunks = Math.ceil(file_size / chunks_size);
-
-    // acumulated data from the file
-    var acumulated_data = '';
-
-    // the csv file is downloaded in chunk to make sure the data is gotten correctly
-    for(chunk = 0; chunk < file_chunks; chunk++){
-
-      // the chunk range in bytes is defined
-      var startByte = chunk * chunks_size;
-      var finalByte = Math.min(startByte + chunks_size - 1, file_size - 1);
-      var byteRange = "bytes=" + startByte + "-" + finalByte;
-
-      // parameters for the chunk fetch request
-      params = {
+      // parameters of the file metadata request
+      var params = {
         'method' : 'GET',
+        'contentType' : 'application/json',
         'headers' : {
           'Authorization' : 'Bearer ' + getToken(client_id, client_secret, tenant_id),
-          'Range' : byteRange
         }
+      };
+
+      // route of the file extracted from the spreadsheet
+      const file_route = configSheet.getRange('B1').getValue();
+
+      // file url constructed with the user id and the route extracted from the spreadsheet
+      const file_url = `https://graph.microsoft.com/v1.0/users/${user_id}/drive/items/root:${file_route}:/content`;
+
+      // the url to fetch the metadata of the file
+      const metadata_url = file_url.replace(':/content','');
+
+      // metadata fetch response
+      response = UrlFetchApp.fetch(metadata_url, params);
+
+      // size of the file (in bytes)
+      const file_size = JSON.parse(response.getContentText()).size;
+
+      // the amount of chunks that will be downloaded to get the data in the file
+      const file_chunks = Math.ceil(file_size / chunks_size);
+
+      // acumulated data from the file
+      var acumulated_data = '';
+
+      // the csv file is downloaded in chunk to make sure the data is gotten correctly
+      for(chunk = 0; chunk < file_chunks; chunk++){
+
+        // the chunk range in bytes is defined
+        var startByte = chunk * chunks_size;
+        var finalByte = Math.min(startByte + chunks_size - 1, file_size - 1);
+        var byteRange = "bytes=" + startByte + "-" + finalByte;
+
+        // parameters for the chunk fetch request
+        params = {
+          'method' : 'GET',
+          'headers' : {
+            'Authorization' : 'Bearer ' + getToken(client_id, client_secret, tenant_id),
+            'Range' : byteRange
+          }
+        }
+
+        // chunk fetch request
+        response = UrlFetchApp.fetch(file_url, params);
+
+        // if the code is not 206 (Partial Content Code)
+        if(response.getResponseCode() != 206){
+
+          throw Error(`The data chunk was not correctly fetched | chunk ${chunk+1}/${file_chunks} | response code ${response.getResponseCode()}`);
+
+        } 
+
+        // the current chunk is stored in a variable with the acumulated data
+        acumulated_data += response.getContentText('UTF-8');
+
       }
 
-      // chunk fetch request
-      response = UrlFetchApp.fetch(file_url, params);
+      //when the csv file is correctly downloaded the date and time is gotten for extra information
+      var feth_date = new Date();
 
-      // if the code is not 206 (Partial Content Code)
-      if(response.getResponseCode() != 206){
-
-        throw Error(`The data chunk was not correctly fetched | chunk ${chunk+1}/${file_chunks} | response code ${response.getResponseCode()}`);
-
-      } 
-
-      // the current chunk is stored in a variable with the acumulated data
-      acumulated_data += response.getContentText('UTF-8');
+      break;
 
     }
+    catch(error){ // if something goes wrong with the file fetching
 
-    //when the csv file is correctly downloaded the date and time is gotten for extra information
-    var feth_date = new Date();
+      if(retries_left > 0){ // if there is still retries left
 
-  }
-  catch(error){ // if something goes wrong with the file fetching
+        // the retries counter is updated
+        retries_left--;
 
-    if(retries_left > 0){ // if there is still retries left
+        // the programs wait an specified number of seconds before making another try
+        Utilities.sleep(retry_sleep_time * 1000);
+      }
+      else{ // if after the specified number of retries the process was unsuccessful and a report is sent
 
-      // the retries counter is updated
-      retries_left--;
-
-      // the programs wait an specified number of seconds before making another try
-      Utilities.sleep(retry_sleep_time * 1000);
-    }
-    else{ // if after the specified number of retries the process was unsuccessful and a report is sent
-
-      // the report email extracted from the spreadsheet
-      const report_email = dataSheet.configSheet.getRange('B2').getValue();
+        // the report email extracted from the spreadsheet
+        const report_email = dataSheet.configSheet.getRange('B2').getValue();
 
 
-      if(report_email){// if the report email is defined in the spreadsheet
+        if(report_email){// if the report email is defined in the spreadsheet
 
-        // the email content can be customized with the next variables
-        // remember that the last thrown exception is stored in the variable 'error' in this scope
-        const subject = '';
-        const body = '';
+          // the email content can be customized with the next variables
+          // remember that the last thrown exception is stored in the variable 'error' in this scope
+          const subject = '';
+          const body = '';
 
-        // the email is sent reporting the error
-        GmailApp.sendEmail(report_email, subject, body);   
+          // the email is sent reporting the error
+          GmailApp.sendEmail(report_email, subject, body);   
+
+          return;
+        }
+
       }
 
     }
 
   }
-
 
   // the data is splitted in an arrays containing the rows of the csv
   var row_values = acumulated_data.replace(/\r/g,'').split('\n');
