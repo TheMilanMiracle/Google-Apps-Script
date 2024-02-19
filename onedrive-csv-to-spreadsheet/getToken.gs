@@ -1,5 +1,5 @@
 /** Function that receives the credentials for a registered app and fetches
- * a token for microsft service authentication
+ * a token for microsoft service authentication
  * 
  * @param {string} clientId - the client id of the registered app
  * @param {string} clientSecret - a secret generated for the registeres app
@@ -11,8 +11,8 @@ function getToken(clientId, clientSecret, tenantId) {
   // payload for the request
   var payload = {
     'grant_type' : 'client_credentials',
-    'client_id' : client_id,
-    'client_secret' : client_secret,
+    'client_id' : clientId,
+    'client_secret' : clientSecret,
     'scope' : 'https://graph.microsoft.com/.default'
   };
 
@@ -24,7 +24,7 @@ function getToken(clientId, clientSecret, tenantId) {
   };
 
   // getting the token
-  var token_url = `https://login.microsoftonline.com/${tenant_id}/oauth2/v2.0/token`;
+  var token_url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
 
   // making the request
   var response = UrlFetchApp.fetch(token_url, params);
