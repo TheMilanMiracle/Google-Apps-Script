@@ -253,8 +253,11 @@ function importCSVData() {
       const body = '';
 
       // the email is sent reporting the error
-      GmailApp.sendEmail(report_email, subject, body);   
+      GmailApp.sendEmail(report_email, subject, body);
+
+      return;
     }
+
   }
   
   // finally the stored date for the data fetch process is stored in the sheet
