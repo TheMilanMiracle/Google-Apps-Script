@@ -18,7 +18,7 @@ const retry_sleep_time = 5; // default is 5
 const html_import_mode = false; //default is false
 
 
-/** Function that fetches the data from a CSV file and import it to a Google Spreadsheet
+/** Function that fetches the data from a CSV text file and import it to a Google Spreadsheet
  * 
  * 
  * this function fetches a whole csv file hosted in One Drive link by chunks, parse the data in it
