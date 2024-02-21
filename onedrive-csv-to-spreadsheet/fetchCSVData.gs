@@ -118,7 +118,7 @@ function importCSVData() {
       else{ // if after the specified number of retries the process was unsuccessful and a report is sent
 
         // the report email extracted from the spreadsheet
-        const report_email = dataSheet.configSheet.getRange('B2').getValue();
+        const report_email = configSheet.getRange('B2').getValue();
 
 
         if(report_email){// if the report email is defined in the spreadsheet
@@ -242,7 +242,7 @@ function importCSVData() {
   catch(error){ // if there is an error while importing the data
         
     // the report email extracted from the spreadsheet
-    const report_email = dataSheet.configSheet.getRange('B2').getValue();
+    const report_email = configSheet.getRange('B2').getValue();
 
 
     if(report_email){// if the report email is defined in the spreadsheet
