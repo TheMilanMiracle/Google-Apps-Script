@@ -131,8 +131,10 @@ function importCSVData() {
           // the email is sent reporting the error
           GmailApp.sendEmail(report_email, subject, body);   
 
-          return;
+
         }
+
+        return;
 
       }
 
@@ -255,8 +257,9 @@ function importCSVData() {
       // the email is sent reporting the error
       GmailApp.sendEmail(report_email, subject, body);
 
-      return;
     }
+
+    return;
 
   }
   
