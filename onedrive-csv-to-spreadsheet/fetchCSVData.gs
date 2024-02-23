@@ -174,7 +174,7 @@ function importCSVData() {
       for(i = 0; i < lines_amount; i+=chunks_lines){
 
         // the data that will be imported in the current api call
-        var chunk = row_values.slice(i, i + chunks_lines);
+        var chunk = row_values.slice(i, Math.min(i, i + chunks_lines, lines_amount-1);
         var chunkData = chunk.join('\n');
 
         // parameters of the api call to import data
