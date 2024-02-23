@@ -174,7 +174,7 @@ function importCSVData() {
       for(i = 0; i < lines_amount; i+=chunks_lines){
 
         // the data that will be imported in the current api call
-        var chunk = row_values.slice(i, Math.min(i, i + chunks_lines, lines_amount-1);
+        var chunk = row_values.slice(i, Math.min(i, i + chunks_lines, lines_amount);
         var chunkData = chunk.join('\n');
 
         // parameters of the api call to import data
@@ -211,7 +211,7 @@ function importCSVData() {
       const chunk_lines = 25000;
 
       // the data in a html table for format
-      const html_table =  csvTextToHtmlTable(row_values.slice(i, Math.min(i + chunk_lines, row_values.length - 1)))
+      const html_table =  csvTextToHtmlTable(row_values.slice(i, Math.min(i + chunk_lines, row_values.length)))
 
       // the data is imported in parts into the spreadsheet to avoid slower api requests
       for(i = 0; i < row_values.length; i += chunk_lines){
