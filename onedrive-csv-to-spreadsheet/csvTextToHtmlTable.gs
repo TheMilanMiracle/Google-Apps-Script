@@ -1,4 +1,4 @@
-/** Function that transform an arrays of rows of a csv file into a 
+/** Function that transform an array of rows of a csv file into a 
  * hmtl table with the same structure
  * 
  * @param {string[]} lines_arr - an array that contain the lines of the csv
