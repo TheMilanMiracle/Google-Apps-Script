@@ -58,7 +58,7 @@ function fetchJSONData() {
       // the text in the response is parsed into a json
       api_response = JSON.parse(api_response.getContentText('UTF-8'));
 
-      //when the csv file is correctly downloaded the date and time is gotten for extra information
+      //when the api data is correctly fetched the date and time is gotten for extra information
       var feth_date = new Date();
 
       break;
