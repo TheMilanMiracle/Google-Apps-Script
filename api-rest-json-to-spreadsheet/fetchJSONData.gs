@@ -10,6 +10,8 @@ const api_method = 'API-METHOD'
 const spreadSheet_url = 'SPREADSHEET-URL';
 
 // Other options
+// // the delimiter that will be used to arrange the information in a csv-like format
+const delimiter = ';'; // default is ";"
 // // the mount of times the program will try to fetch the data from the file
 const fetching_retries = 5; // default is 5
 // // the amound of SECONDS between fetching tries
@@ -114,7 +116,7 @@ function fetchJSONData() {
   for(key in obj_template){
 
     // the column name is added to the first row
-    first_row += `${obj_template[key]};`;
+    first_row += `${obj_template[key]}${delimiter}`;
   
   }
 
@@ -155,7 +157,7 @@ function fetchJSONData() {
         // if the property is not defined in the object an empty columns is added instead
         if(obj == null){
           
-          row_data += `;`; 
+          row_data += `${delimiter}`; 
           
           continue;
           
@@ -163,7 +165,7 @@ function fetchJSONData() {
 
         else{// the result value of the object chain is stored in the row
 
-          row_data += `${obj};`;
+          row_data += `${obj}${delimiter}`;
 
         }
 
@@ -172,7 +174,7 @@ function fetchJSONData() {
       else{
 
         // the value is added to the row data
-        row_data += `${row_json[key]};`
+        row_data += `${row_json[key]}${delimiter}`
         
       }
     }
@@ -183,7 +185,7 @@ function fetchJSONData() {
   }
 
   // the sheet size will be adjusted according to the needed space for all the data
-  adjustSheetSize(dataSheet, data.length, data[0].split(';').length);
+  adjustSheetSize(dataSheet, data.length, data[0].split(delimiter).length);
 
   // sheet and spreadsheet id for the api calls
   const sheetId = dataSheet.getSheetId();
@@ -218,7 +220,7 @@ function fetchJSONData() {
                   columnIndex : 0
                 },
                 data : chunkData,
-                delimiter : ';'
+                delimiter : delimiter
               }
             }
           ]
