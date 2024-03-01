@@ -15,7 +15,7 @@ const fix_token = false; // default is false
 // // value of the fixed token in case the program is configured to use it
 const fixed_token = 'FIXED-TOKEN';
 // // the route inside the api json response where the list of registers will be stored (a '.' in the route mark a sublevel in the object)
-const data_route = '' // default is first level
+const data_route = ''; // default is first level
 // // whether or not the used api allow pagination
 const paginate = false; // default is false
 // // amount of pages (if pagination is allowed) in which the program will download the data
@@ -99,7 +99,10 @@ function fetchJSONData() {
         for(i = 1; i <= total_pages; i++){
 
           // the url is adjusted to fetch the current page
+
+          // // the way to paginate in the request may vary according to a api
           const page_url = `${api_endpoint}${api_method}/?page=${i}&limit=${page_registers}`;
+          // // // 
 
           // the current page is added to the array
           var page_response = UrlFetchApp.fetch(page_url, params);
