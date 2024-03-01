@@ -13,7 +13,9 @@ const spreadSheet_url = 'SPREADSHEET-URL';
 // // whether or not the program has to use a fixed token
 const fix_token = false; // default is false
 // // value of the fixed token in case the program is configured to use it
-const fixed_token = 'FIXED-TOKEN'
+const fixed_token = 'FIXED-TOKEN';
+// // the route inside the api json response where the list of registers will be stored (a '.' in the route mark a sublevel in the object)
+const data_route = '' // default is first level
 // // whether or not the used api allow pagination
 const paginate = false; // default is false
 // // amount of pages (if pagination is allowed) in which the program will download the data
@@ -117,24 +119,43 @@ function fetchJSONData() {
         // array that will contain all of the object from the response
         var api_response = [];
 
-        // // the way of get the registers may vary with the api, change it according to your api
-        pages.forEach((res) => {
+        // for every response
+        pages.forEach((response) => {
+          if(data_route){ // if the list of objects is on a sublevel
 
-          for(i = 0; i < Object.keys(res['results']['row']).length; i++){
+            if(data_route.match(/\./)){ // if the list in many sublevels deep
 
-            api_response.push(res['results']['row'][i]);
+              // the levels described in the template key
+              var levels = data_route.split('.');
 
+              // the object in the first level
+              var obj = response;
+
+              for(l in levels){ // iterate through the levels to reach the list
+                
+                // the object is updated with the next level one
+                obj = obj[levels[l]];
+
+              }
+
+              // when the list is reached, the objects are pushed into the array with the acumulated objects
+              obj.forEach((o) => {api_response.push(o)})
+
+            }
+            else{ // if the list in one sublevel deep
+              response[data_route].forEach((obj) => {api_response.push(obj)})
+            }
           }
-
+          else{ // the lists of objects are in the first level
+            response.forEach((obj) => {api_response.push(obj)})
+          }
         });
-        // // //
 
       }
       else{ 
         
         // api fetch request
-        var api_response = UrlFetchApp.fetch(`${api_endpoint}${api_method}`, params)
-
+        var api_response = UrlFetchApp.fetch(`${api_endpoint}${api_method}`, params);
 
         // if the code is not 200
         if(api_response.getResponseCode() != 200){
@@ -145,6 +166,35 @@ function fetchJSONData() {
 
         // the text in the response is parsed into a json
         api_response = JSON.parse(api_response.getContentText('UTF-8'));
+
+        if(data_route){ // if the list of objects is on a sublevel
+
+          if(data_route.match(/\./)){ // if the list in many sublevels deep
+
+            // the levels described in the template key
+            var levels = data_route.split('.');
+
+            // the object in the first level
+            var obj = api_response;
+
+            for(l in levels){ // iterate through the levels to reach the list
+              
+              // the object is updated with the next level one
+              obj = obj[levels[l]];
+
+            }
+
+            // when the list is reached a pointer is relocated to store it
+            api_response = obj;
+
+
+          }
+          else{ // if the list in one sublevel deep
+
+            api_response = api_response[data_route];
+
+          }
+        }
 
       }
 
