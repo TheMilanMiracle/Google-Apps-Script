@@ -1,6 +1,6 @@
 //Authentification parameters
 const token_request_url = 'TOKEN-URL'
-const token_auth_payload = TOKEN-PAYLOAD
+const token_auth_payload = {}
 
 //API REST fetch information
 const api_endpoint = 'API-ENDPOINT'
@@ -10,6 +10,14 @@ const api_method = 'API-METHOD'
 const spreadSheet_url = 'SPREADSHEET-URL';
 
 // Other options
+// // whether or not the program has to use a fixed token
+const fix_token = false; // default is false
+// // value of the fixed token in case the program is configured to use it
+const fixed_token = 'FIXED-TOKEN'
+// // whether or not the used api allow pagination
+const paginate = false; // default is false
+// // amount of pages (if pagination is allowed) in which the program will download the data
+const total_pages = 10; // default is 10
 // // the delimiter that will be used to arrange the information in a csv-like format
 const delimiter = ';'; // default is ";"
 // // the mount of times the program will try to fetch the data from the file
@@ -36,31 +44,111 @@ function fetchJSONData() {
   var retries_left = fetching_retries;
 
   while(true){
-    try{ // tries to fetch the datap
-      // paramaters for the json fetch request
-      var params = {
-        method : 'GET',
-        contentType : 'application/json',
-        headers : {
-          Authorization : `Bearer ${getToken(token_request_url, token_auth_payload)}`
+
+    try{ // tries to fetch the data
+
+      // if there is a fixed token
+      if(fixed_token){
+
+        // parameters for the json fetch request
+        // // the way in which an api receive the token might vary, make changes accordingly
+        var params = {
+          method : 'GET',
+          contentType : 'application/json',
+          muteHttpExceptions : true,
+          headers : {
+            apikey : fixed_token
+          }
+        } 
+
+      }
+      else{
+
+        // paramaters for the json fetch request
+        // // the way in which an api receive the token might vary, make changes accordingly
+        var params = {
+          method : 'GET',
+          contentType : 'application/json',
+          headers : {
+            Authorization : `Bearer ${getToken(token_request_url, token_auth_payload)}`
+          }
         }
+
       }
 
-      // api fetch request
-      var api_response = UrlFetchApp.fetch(`${api_endpoint}${api_method}`, params)
+      // if the api allow pagination
+      if(paginate){ 
+
+        // the number of registers is obtained first
+
+        // // the way of get the total of registers may vary with the api, change it according to your api
+        const first_register = JSON.parse(UrlFetchApp.fetch(`${api_endpoint}${api_method}/?page=1&limit=1`, params).getContentText('UTF-8'))
+        
+        const total_registers = parseInt(first_register['results']['row']['total']);
+        // // //
+
+        // the number of registers per request
+        const page_registers = Math.ceil(total_registers / total_pages);
+
+        // array to store all the responses
+        var pages = [];
+
+        // for every page
+        for(i = 1; i <= total_pages; i++){
+
+          // the url is adjusted to fetch the current page
+          const page_url = `${api_endpoint}${api_method}/?page=${i}&limit=${page_registers}`;
+
+          // the current page is added to the array
+          var page_response = UrlFetchApp.fetch(page_url, params);
+
+          // if the code is not 200
+          if(page_response.getResponseCode() != 200){
+
+            throw Error(`The data was not correctly fetched | response code ${page_response.getResponseCode()}`);
+
+          } 
+
+          // the content of the page is parsed and pushed into the pages array
+          pages.push(JSON.parse(page_response.getContentText('UTF-8')));
+
+        }
+
+        // array that will contain all of the object from the response
+        var api_response = [];
+
+        // // the way of get the registers may vary with the api, change it according to your api
+        pages.forEach((res) => {
+
+          for(i = 0; i < Object.keys(res['results']['row']).length; i++){
+
+            api_response.push(res['results']['row'][i]);
+
+          }
+
+        });
+        // // //
+
+      }
+      else{ 
+        
+        // api fetch request
+        var api_response = UrlFetchApp.fetch(`${api_endpoint}${api_method}`, params)
 
 
-      // if the response code is not 200
-      if(api_response.getResponseCode() != 200){
+        // if the code is not 200
+        if(api_response.getResponseCode() != 200){
 
-        throw Error(`The data was not correctly fetched | response code ${response.getResponseCode()}`);
+          throw Error(`The data was not correctly fetched | response code ${response.getResponseCode()}`);
 
-      } 
+        } 
 
-      // the text in the response is parsed into a json
-      api_response = JSON.parse(api_response.getContentText('UTF-8'));
+        // the text in the response is parsed into a json
+        api_response = JSON.parse(api_response.getContentText('UTF-8'));
 
-      //when the api data is correctly fetched the date and time is gotten for extra information
+      }
+
+      //when the api data is downloaded the date and time is saved for extra information about the data
       var feth_date = new Date();
 
       break;
@@ -68,6 +156,7 @@ function fetchJSONData() {
     }
     catch(error){ // if something goes wrong with the data fetch
 
+      // the error is logged into the console
       Logger.log(error)
 
       if(retries_left > 0){ // if there is still retries left
@@ -123,9 +212,16 @@ function fetchJSONData() {
   // the first row is added to the data array
   data.push(first_row.substring(0, first_row.length-1));
 
+  // the way to get the number of total rows that will be exported depends on the pagination use
+  if(paginate){
+    var response_len = api_response.length;
+  }
+  else{
+    var response_len = Object.keys(api_response).length;
+  }
 
   // for every object fetched
-  for(var i = 0; i < Object.keys(api_response).length; i++){
+  for(var i = 0; i < response_len; i++){
 
     // the current object that will be parsed into a row
     var row_json = api_response[i];
@@ -297,7 +393,7 @@ function fetchJSONData() {
 
   }
 
-  // finally the stored date for the data fetch process is stored in the sheet
+  // finally the saved date for the data fetch process is stored in the sheet
   configSheet.getRange('B1').setValue(feth_date);
 
 }
