@@ -348,14 +348,17 @@ function fetchJSONData() {
     */
     if(!html_import_mode){
 
+      // the total amount of rows that will be imported to the csv
+      const lines_amount = data.length; 
+
       // the amount of lines per api call
       const chunk_lines = 35000;
 
       // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < data.length; i+=chunk_lines){
+      for(i = 0; i < lines_amount; i += chunk_lines){
 
         // the data that will be imported in the current api call
-        var chunk = data.slice(i, Math.min(i + chunk_lines, data.length));
+        var chunk = data.slice(i, Math.min(i + chunk_lines, lines_amount));
         var chunkData = chunk.join('\n');
 
         // parameters of the api call to import data
@@ -388,14 +391,17 @@ function fetchJSONData() {
     */
     else{
 
+      // the total amount of rows that will be imported to the csv
+      const lines_amount = data.length;
+
       // the amount of lines per api call
       const chunk_lines = 25000;
 
-      // the data in a html table for format
-      const html_table =  csvTextToHtmlTable(data.slice(i, Math.min(i + chunk_lines, data.length)))
-
       // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < data.length; i += chunk_lines){
+      for(i = 0; i < lines_amount; i += chunk_lines){
+
+        // the data in a html table for format
+        const html_table =  csvTextToHtmlTable(data.slice(i, Math.min(i + chunk_lines, lines_amount)), delimiter)
 
         // parameters of the api call to import data
         var resource = {
