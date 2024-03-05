@@ -9,7 +9,7 @@ const spreadSheet_url = 'SPREADSHEET-URL';
 
 // Other options
 // // the size of the chunks of the data download
-const chunks_size = 25000000; //default is 25 MB, limit for fetching is 50 MB
+const chunks_size = 25000000; //default is 25 MB, limit for each fetching call is 50 MB
 // // the mount of times the program will try to fetch the data from the file
 const fetching_retries = 5; // default is 5
 // // the amound of SECONDS between fetching tries
@@ -107,6 +107,8 @@ function importCSVData() {
     }
     catch(error){ // if something goes wrong with the file fetching
 
+      Logger.log(error);
+
       if(retries_left > 0){ // if there is still retries left
 
         // the retries counter is updated
@@ -114,12 +116,12 @@ function importCSVData() {
 
         // the programs wait an specified number of seconds before making another try
         Utilities.sleep(retry_sleep_time * 1000);
+
       }
       else{ // if after the specified number of retries the process was unsuccessful and a report is sent
 
         // the report email extracted from the spreadsheet
         const report_email = configSheet.getRange('B2').getValue();
-
 
         if(report_email){// if the report email is defined in the spreadsheet
 
@@ -131,7 +133,6 @@ function importCSVData() {
           // the email is sent reporting the error
           GmailApp.sendEmail(report_email, subject, body);   
 
-
         }
 
         return;
@@ -141,6 +142,7 @@ function importCSVData() {
     }
 
   }
+
 
   // the data is splitted in an arrays containing the rows of the csv
   var row_values = acumulated_data.replace(/\r/g,'').split('\n');
@@ -168,13 +170,13 @@ function importCSVData() {
       const lines_amount = row_values.length;
 
       // the amount of lines per api call
-      const chunks_lines = 35000;
+      const chunk_lines = 35000;
 
       // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < lines_amount; i+=chunks_lines){
+      for(i = 0; i < lines_amount; i += chunk_lines){
 
         // the data that will be imported in the current api call
-        var chunk = row_values.slice(i, Math.min(i, i + chunks_lines, lines_amount);
+        var chunk = row_values.slice(i, Math.min(i + chunk_lines, lines_amount - 1));
         var chunkData = chunk.join('\n');
 
         // parameters of the api call to import data
@@ -207,14 +209,17 @@ function importCSVData() {
     */
     else{
 
+      // the total amount of rows that will be imported to the csv
+      const lines_amount = row_values.length;
+
       // the amount of lines per api call
       const chunk_lines = 25000;
 
-      // the data in a html table for format
-      const html_table =  csvTextToHtmlTable(row_values.slice(i, Math.min(i + chunk_lines, row_values.length)))
-
       // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < row_values.length; i += chunk_lines){
+      for(i = 0; i < lines_amount; i += chunk_lines){
+
+        // the data in a html table format
+        const html_table =  csvTextToHtmlTable(row_values.slice(i, Math.min(i + chunk_lines, lines_amount - 1)), delimiter);
 
         // parameters of the api call to import data
         var resource = {
@@ -242,10 +247,11 @@ function importCSVData() {
     }
   }
   catch(error){ // if there is an error while importing the data
+
+    Logger.log(error);
         
     // the report email extracted from the spreadsheet
     const report_email = configSheet.getRange('B2').getValue();
-
 
     if(report_email){// if the report email is defined in the spreadsheet
 
