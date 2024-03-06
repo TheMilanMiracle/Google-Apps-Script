@@ -198,25 +198,24 @@ function fetchCSVData() {
         }
       }];
 
-      // if the format of the spreadSheet is not correct
-      if(Sheets.Spreadsheets.get(spreadSheet_id).properties.locale != spreadSheet_format){
-
-        // a new request is added to the list
-        api_request.push({
-          updateSpreadsheetProperties: {
-            properties: {
-              locale: spreadSheet_format,
-            },
-            fields: 'locale'
-          }
-        });
-
-      }
-        
-
       // call to the sheets api
       Sheets.Spreadsheets.batchUpdate({requests : api_request}, spreadSheet_id);
       SpreadsheetApp.flush();
+
+    }
+
+    // if the format of the spreadSheet is not correct
+    if(Sheets.Spreadsheets.get(spreadSheet_id).properties.locale != spreadSheet_format){
+
+      // an api request to change the spreadsheet format is done
+      Sheets.Spreadsheets.batchUpdate({requests : [{ 
+        updateSpreadsheetProperties: {
+          properties: {
+            locale: spreadSheet_format,
+          },
+          fields: 'locale'
+        }
+      }]}, spreadSheet_id);
 
     }
 
