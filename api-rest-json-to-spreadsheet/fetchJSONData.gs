@@ -6,8 +6,13 @@ const token_auth_payload = {}
 const api_endpoint = 'API-ENDPOINT'
 const api_method = 'API-METHOD'
 
-// Google Services urls
-const spreadSheet_url = 'SPREADSHEET-URL';
+// Google Spreadsheet configurations
+// // the name of the sheet that will contain the information imported
+const dataSheet_name = '';
+// // the name of the sheet that will contain some configurations or information
+const configSheet_name = '';
+// // format that the spreadsheet will use for dates, numeric values, etc
+const spreadSheet_format = 'es_CL';
 
 // Other options
 // // whether or not the program has to use a fixed token
@@ -26,8 +31,6 @@ const delimiter = ';'; // default is ";"
 const fetching_retries = 5; // default is 5
 // // the amound of SECONDS between fetching tries
 const retry_sleep_time = 5; // default is 5
-// // import mode (false: the data is imported using a delimiter, true: the data is imported as a html table)
-const html_import_mode = false; //default is false
 
 
 /** Function that fetches JSON data from a REST API and imports it into a Google Sheets spreadsheet.
@@ -37,9 +40,9 @@ const html_import_mode = false; //default is false
  */
 function fetchJSONData() {
   // Google Spreadsheet 
-  var spreadSheet = SpreadsheetApp.openByUrl(spreadSheet_url);
-  var dataSheet = spreadSheet.getSheets()[0];
-  var configSheet = spreadSheet.getSheets()[1];
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet()
+  var dataSheet = spreadSheet.getSheetByName(dataSheet_name)
+  var configSheet = spreadSheet.getSheetByName(configSheet_name);
 
 
   // counter for the retries of the fetch process
@@ -149,7 +152,7 @@ function fetchJSONData() {
               response[data_route].forEach((obj) => {api_response.push(obj)})
             }
           }
-          else{ // the lists of objects are in the first level
+          else{ // the list of objects are in the first level
             response.forEach((obj) => {api_response.push(obj)})
           }
         });
@@ -265,13 +268,8 @@ function fetchJSONData() {
   // the first row is added to the data array
   data.push(first_row.substring(0, first_row.length-1));
 
-  // the way to get the number of total rows that will be exported depends on the pagination use
-  if(paginate){
-    var response_len = api_response.length;
-  }
-  else{
-    var response_len = Object.keys(api_response).length;
-  }
+  // the number of rowe to process
+  const response_len = api_response.length;
 
   // for every object fetched
   for(var i = 0; i < response_len; i++){
@@ -344,89 +342,61 @@ function fetchJSONData() {
 
     /*
     this mode sends the data to the api along with the csv delimiter for the api itself to process 
-    the data into rows, this approach is generally faster (depends on the data density)
+    the data into rows
     */
-    if(!html_import_mode){
 
-      // the total amount of rows that will be imported to the csv
-      const lines_amount = data.length; 
+    // the total amount of rows that will be imported to the csv
+    const lines_amount = data.length; 
 
-      // the amount of lines per api call
-      const chunk_lines = 35000;
+    // the amount of lines per api call
+    const chunk_lines = 35000;
 
-      // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < lines_amount; i += chunk_lines){
+    // the data is imported in parts into the spreadsheet to avoid slower api requests
+    for(i = 0; i < lines_amount; i += chunk_lines){
 
-        // the data that will be imported in the current api call
-        var chunk = data.slice(i, Math.min(i + chunk_lines, lines_amount));
-        var chunkData = chunk.join('\n');
+      // the data that will be imported in the current api call
+      var chunk = data.slice(i, Math.min(i + chunk_lines, lines_amount));
+      var chunkData = chunk.join('\n');
 
-        // parameters of the api call to import data
-        var resource = {
-          requests : [
-            {
-              pasteData: {
-                coordinate : {
-                  sheetId : sheetId,
-                  rowIndex : i,
-                  columnIndex : 0
-                },
-                data : chunkData,
-                delimiter : delimiter
-              }
+      // parameters of the api call to import data
+      var resource = {
+        requests : [
+          {
+            pasteData: {
+              coordinate : {
+                sheetId : sheetId,
+                rowIndex : i,
+                columnIndex : 0
+              },
+              data : chunkData,
+              type : 'PASTE_VALUES'
+              delimiter : delimiter
             }
-          ]
-        };
+          }
+        ]
+      };
 
-        // call to the sheets api
-        Sheets.Spreadsheets.batchUpdate(resource, spreadSheet_id);
-        SpreadsheetApp.flush();
-
-      }
+      // call to the sheets api
+      Sheets.Spreadsheets.batchUpdate(resource, spreadSheet_id);
+      SpreadsheetApp.flush();
 
     }
-    /*
-    this mode transforms the rows into a html table and send it to the api for it to precess 
-    the data into rows, this approach is generally a bit slower (depends on the data density)
-    */
-    else{
 
-      // the total amount of rows that will be imported to the csv
-      const lines_amount = data.length;
+    // if the format of the spreadSheet is not correct
+    if(Sheets.Spreadsheets.get(spreadSheet_id).properties.locale != spreadSheet_format){
 
-      // the amount of lines per api call
-      const chunk_lines = 25000;
-
-      // the data is imported in parts into the spreadsheet to avoid slower api requests
-      for(i = 0; i < lines_amount; i += chunk_lines){
-
-        // the data in a html table for format
-        const html_table =  csvTextToHtmlTable(data.slice(i, Math.min(i + chunk_lines, lines_amount)), delimiter)
-
-        // parameters of the api call to import data
-        var resource = {
-          requests: [
-            {
-              pasteData : {
-                coordinate : {
-                  sheetId : sheetId,
-                  rowIndex : i,
-                  columnIndex : 0
-                },
-                data : html_table,
-                html : true
-              }
-            }
-          ]
-        };
-
-        // call to the sheets api
-        Sheets.Spreadsheets.batchUpdate(resource, spreadSheet_id);
-        SpreadsheetApp.flush();
-
-      }
+      // an api request to change the spreadsheet format is done
+      Sheets.Spreadsheets.batchUpdate({requests : [{ 
+        updateSpreadsheetProperties: {
+          properties: {
+            locale: spreadSheet_format,
+          },
+          fields: 'locale'
+        }
+      }]}, spreadSheet_id);
 
     }
+
   }
   catch(error){ // if there is an error while importing the data
 

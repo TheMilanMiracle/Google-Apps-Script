@@ -24,4 +24,4 @@
  *
  */
  
- const obj_template = {}
+const obj_template = {}
