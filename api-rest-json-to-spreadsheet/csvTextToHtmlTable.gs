@@ -9,12 +9,12 @@ function csvTextToHtmlTable(lines_arr) {
   var ret = '<table>';
 
   // for every line in the array
-  for(i = 0; i < lines_arr.length; i++){
+  for(line = 0; line < lines_arr.length; line++){
     // the start of the row is marked
     ret += '<tr>'
 
     // the columns are written in html form
-    lines_arr[i].split(';').forEach(function(val){ret += `<td>${val}</td>`;})
+    lines_arr[line].split(';').forEach(function(val){ret += `<td>${val}</td>`;})
 
     // the end of the row is marked
     ret += '</tr>'
