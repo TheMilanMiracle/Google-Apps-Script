@@ -205,7 +205,7 @@ function fetchCSVData() {
         api_request.push({
           updateSpreadsheetProperties: {
             properties: {
-              locale: 'es_CL',
+              locale: spreadSheet_format,
             },
             fields: 'locale'
           }
