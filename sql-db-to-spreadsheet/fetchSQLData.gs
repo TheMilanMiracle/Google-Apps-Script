@@ -220,6 +220,7 @@ function fetchSQLData() {
                 columnIndex : 0
               },
               data : chunkData,
+              type : 'PASTE_VALUES',
               delimiter : delimiter
             }
           }
