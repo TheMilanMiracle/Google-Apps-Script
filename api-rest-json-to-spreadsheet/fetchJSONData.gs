@@ -369,7 +369,7 @@ function fetchJSONData() {
                 columnIndex : 0
               },
               data : chunkData,
-              type : 'PASTE_VALUES'
+              type : 'PASTE_VALUES',
               delimiter : delimiter
             }
           }
