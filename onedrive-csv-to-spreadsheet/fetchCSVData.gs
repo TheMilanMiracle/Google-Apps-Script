@@ -157,7 +157,12 @@ function fetchCSVData() {
   const delimiter = getDelimiter(row_values.slice(0,4));
 
   // the sheet size is adjusted to the csv file size
-  adjustSheetSize(dataSheet, row_values.length, row_values[0].split(delimiter).length);
+  if(row_values[row_values.length-1].length == 0){
+    adjustSheetSize(dataSheet, row_values.length - 1, row_values[0].split(delimiter).length);
+  }
+  else{
+    adjustSheetSize(dataSheet, row_values.length, row_values[0].split(delimiter).length);
+  }
 
 
   // sheet and spreadsheet id for the api calls
